@@ -1,0 +1,40 @@
+{% extends 'base.html'%}
+
+
+
+{%block content%}
+<form method="POST" enctype="multipart/form-data" class="row g-3">
+
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="col-md-6">
+        <label for="nome" class="form-label">Nome</label>
+        <input type="text" class="form-control" name="nome" required>
+    </div>
+
+    
+    <div class="col-md-6">
+        <label for="descricao" class="form-label">Descricao</label>
+        <input type="text" class="form-control" name="descricao" required>
+    </div>
+
+    <div class="col-md-6">
+        <label for="categoria">Categoria</label>
+        <select class="form-select" name="id_cat">
+            <option selected>Selecione a categoria</option>
+            {% for i in categoria %}
+            <option value="{{i['id']}}">{{i['nome']}}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- <div class="col-md-6">
+        <label for="capa" class="form-label">Imagem da capa</label>
+        <input type="file" class="form-control" id="capa" name="capa" accept="image/*" required>
+    </div> -->
+
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+</form>
+{%endblock%}
