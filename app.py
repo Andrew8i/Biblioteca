@@ -3,6 +3,8 @@ from flask import Flask, render_template, url_for, request, redirect
 import sqlite3
 import os
 from flask_wtf.csrf import CSRFProtect
+# from flask_login import LoginManager
+
 
 app = Flask(__name__)
 csrf = CSRFProtect(app)
@@ -10,6 +12,8 @@ csrf = CSRFProtect(app)
 app.secret_key = 'minha_chave'
 app.WTF_CSRF_SECRET_KEY = 'minha_chave_segura'
 
+# login_manager = LoginManager()
+# login_maneger.login_view = 'login'
 def init_db():
     conn = sqlite3.connect('base.db')
     conn.execute('''
@@ -23,11 +27,17 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome TEXT NOT NULL,
             descricao TEXT,
-            capa BLOB,
+            imagem TEXT,
             cat_id INTEGER,
             ativo INTEGER,
             FOREIGN KEY(cat_id)REFERENCES categoria(id))
             ''')
+        
+    # try:
+    #     conn.execute("SELECT end_imagem FROM livro LIMIT 1")
+    # except sqlite3.OperationalError:
+    #     conn.execute("ALTER TABLE livro ADD COLUMN end_image TEXT DEFAULT ''")
+
     conn.commit()
     conn.close()
 
@@ -46,6 +56,22 @@ def listarCategoria():
     categoria = conn.execute('SELECT * FROM categoria ORDER BY nome').fetchall()
     conn.close()
     return render_template('listar_categoria.html',categoria=categoria)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        senha = request.form['senha']
+        conn = conexao()
+        user = conn.execute('SELECT * FROM usuario WHERE email = ?', (email,)).fetchone()
+        conn.close()
+        if user and check_password_hash(user['senha'], senha):
+            user_obj = User(user['id'], user['nome'], user['email'], user['senha'])
+            login_user(user_obj)
+            return redirect(url_for('listarLivro'))
+        else:
+            return render_template('login.html', erro='Email ou senha inválidos')
+    return render_template('login.html')
 
 @app.route("/nova_categoria", methods=['GET','POST'])
 def criarCategoria():
@@ -83,7 +109,7 @@ def excluirCategoria(id):
         conn.execute('''DELETE FROM categoria WHERE id=? ''', (id,))
         conn.commit()
         conn.close()
-        return render_template('editar_categoria.html')
+        return redirect(url_for('listarCategoria'))
 
 @app.route("/cadastrar_livro", methods=['GET','POST'])
 def novoLivro():
@@ -92,10 +118,21 @@ def novoLivro():
     if request.method == 'POST':
         nome = request.form['nome']
         descricao = request.form['descricao']
+        imagem = request.files["imagem"]
+
+
+        from werkzeug.utils import secure_filename
+        imagem_filename = secure_filename(imagem.filename)
+        upload_path = os.path.join("static", "uploads")
+        os.makedirs(upload_path, exist_ok=True)
+
+        imagem.save(os.path.join(upload_path, imagem_filename))
         conn = conexao()  
-        conn.execute('INSERT INTO livro (nome,descricao) VALUES (?,?)',(nome,descricao,))
+        conn.execute('INSERT INTO livro (nome,descricao,end_image) VALUES (?,?,?)',(nome,descricao,imagem_filename))
+
         conn.commit()
         conn.close()
+
         return redirect(url_for('listarLivro'))
     return render_template("cadastrar_livro.html", categoria=categoria)
 
@@ -105,6 +142,22 @@ def listarLivro():
     livro = conn.execute('SELECT * FROM livro ORDER BY nome').fetchall()
     conn.close()
     return render_template('listar_livro.html', livro=livro)
+
+# @app.route('/cadastrar_usuario', methods=['GET', 'POST'])
+# def cadastrarUsuario():
+#     if request.method == 'POST':
+#         nome = request.form['nome']
+#         email = request.form['email']
+#         senha = generate_password_hash(request.form['senha'])
+#         try:
+#             conn = conexao()
+#             conn.execute('INSERT INTO usuario (nome, email, senha) VALUES (?, ?, ?)', (nome, email, senha))
+#             conn.commit()
+#             conn.close()
+#             return redirect(url_for('login'))
+#         except:
+#             return "Erro ao cadastrar usuario (e-mail pode estar duplicado)"
+#     return render_template('cadastrar_usuario.html')
 
 
 

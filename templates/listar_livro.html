@@ -34,7 +34,10 @@
         <td scape="row">{{ i.id }}</td>
         <td>{{i.nome}}</td>
         <td>{{i.descricao}}</td>
-        <td>{{i.capa}}</td>
+        <td>
+          <img src="{{ url_for('static', filename='uploads/' ~ i.end_image) }}" alt="Capa" width="50">
+          <span class="text-muted"></span>
+        </td>
         <td>
           
           <a href="{{ url_for('listarLivro', id=i['id'] )}}" class="btn btn-sm btn-warning">Editar</a>
